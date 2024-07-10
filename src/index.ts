@@ -3,6 +3,7 @@ import { PhysicsLoader } from "@enable3d/ammo-physics";
 import { Project, Scene3D } from "enable3d";
 import * as THREE from "three";
 
+
 export class PhysicsTest extends Scene3D {
   async init() {
     this.renderer.setPixelRatio(1);
@@ -10,20 +11,82 @@ export class PhysicsTest extends Scene3D {
   }
 
   async create() {
-    this.warpSpeed();
+    this.warpSpeed('-ground').then(() => {
+    });
+
+    // console.log(this);
+
+    //this.physics.debug?.enable();
+
+
+    this.camera.position.set(-30, 37, 0);
+
+    let ground = this.physics.add.box({ name: 'ground', x: 0, y: -1, z: 0, width: 42, height: 1, depth: 42, mass: 10 }, { lambert: { color: 'white' } })
+    ground.body.setBounciness(1.2);
+    ground.body.setCollisionFlags(2)
+
+    let wall1 = this.physics.add.box({ name: 'wall', x: 0, y: 4, z: 20, width: 42, height: 25, depth: 0.2, mass: 10 }, { lambert: { color: 'white', opacity: 0.1, transparent: true } })
+    wall1.body.setBounciness(1.5);
+    wall1.body.setCollisionFlags(2)
+    let wall2 = this.physics.add.box({ name: 'wall', x: 0, y: 4, z: -20, width: 42, height: 25, depth: 0.2, mass: 10 }, { lambert: { color: 'white', opacity: 0.1, transparent: true } })
+    wall2.body.setBounciness(1.5);
+    wall2.body.setCollisionFlags(2)
+    let wall3 = this.physics.add.box({ name: 'wall', x: 20, y: 4, z: 0, width: 0.2, height: 25, depth: 42, mass: 10 }, { lambert: { color: 'white', opacity: 0.1, transparent: true } })
+    wall3.body.setBounciness(1.5);
+    wall3.body.setCollisionFlags(2)
+    let wall4 = this.physics.add.box({ name: 'wall', x: -20, y: 4, z: 0, width: 0.2, height: 25, depth: 42, mass: 10 }, { lambert: { color: 'white', opacity: 0.1, transparent: true } })
+    wall4.body.setBounciness(1.5);
+    wall4.body.setCollisionFlags(2)
+
+    net = this.physics.add.box({ name: 'net', x: 0, y: 1, z: 0, width: 42, height: 5, depth: 0.2, mass: 10 }, { lambert: { color: 'white', opacity: 0.5, transparent: true } })
+    net.body.setBounciness(1.5);
+    net.body.setCollisionFlags(1)
+
+
+    ball = this.physics.add.sphere({ name: 'ball', y: 5, z: 5 }, { lambert: { color: 'green' } })
+
+    ball.body.setBounciness(1);
+    ball.body.applyForceX(0);
+    ball.body.applyForceY(5.9);
+    ball.body.applyForceZ(0);
+
+
+    player = this.physics.add.box({ name: 'player', y: 0, z: 10, width: 3, depth: 3, mass: 10 }, { lambert: { color: 'blue' } })
+
+    player.body.setCollisionFlags(2)
+    //player.body.setBounciness(1.4)
+    //player.body.setRestitution(2)
+
+    this.camera.lookAt(net.position);
+
+
+    player2 = this.physics.add.box({ name: 'player2', y: 0, z: -10, width: 3, depth: 3, mass: 10 }, { lambert: { color: 'red' } })
+    player2.body.setCollisionFlags(2);
+
+    player.body.on.collision((otherObject, event) => {
+      if (otherObject.name == 'ball') {
+        if (event == 'end') {
+          playerBallCollisions = false
+        }
+        else if (event == 'start') {
+          playerBallCollisions = true
+        }
+      }
+    })
+    player2.body.on.collision((otherObject, event) => {
+      if (otherObject.name == 'ball') {
+        if (event == 'end') {
+          player2BallCollisions = false
+        }
+        else if (event == 'start') {
+          player2BallCollisions = true
+        }
+      }
+    })
 
 
 
-    this.camera.position.set(10, 10, 10);
 
-    sphere1 = this.physics.add.sphere({ y: 5, z: -3 }, { lambert: { color: 'red' } })
-
-    sphere1.body.setBounciness(0.6);
-    sphere1.body.applyForceX(0);
-    sphere1.body.applyForceY(5.9);
-    sphere1.body.applyForceZ(0);
-
-    plane = this.physics.add.box({ y: 0, z: -3.2 }, { lambert: { color: 'red' } })
 
 
     setupEventHandlers();
@@ -33,25 +96,44 @@ export class PhysicsTest extends Scene3D {
 
   }
 
+
+
+
+
   update() {
-    if (moveDirection.forward == 1) {
-      sphere1.body.setVelocityX(10);
+    //console.log(playerShoot);
+
+    if (playerBallCollisions && playerShoot) {
+      playerBallCollisions = false;
+      ball.body.applyForceY(10.9);
+      ball.body.applyForceZ(-7);
     }
-    else if (moveDirection.back == 1) {
-      sphere1.body.setVelocityX(-10);
-    }
-    else {
-      sphere1.body.setVelocityX(0);
+    if (player2BallCollisions) {
+      console.log(123123)
+      player2BallCollisions = false;
+      ball.body.applyForceY(10.9);
+      ball.body.applyForceZ(7);
     }
 
-    if (moveDirection.space == 1) {
-      sphere1.body.applyForceY(0.5);
-      ballJump = false;
+    if (player2.position.x < ball.position.x) {
+      player2.position.x += 0.1;
+      player2.body.needUpdate = true;
+    }
+    else if (player2.position.x > ball.position.x) {
+      player2.position.x -= 0.1;
+      player2.body.needUpdate = true;
+    }
+    if (player2.position.z < ball.position.z && ball.position.z < net.position.z) {
+      player2.position.z += 0.1;
+      player2.body.needUpdate = true;
+    }
+    else if (player2.position.z > ball.position.z && ball.position.z < net.position.z) {
+      player2.position.z -= 0.1;
+      player2.body.needUpdate = true;
     }
 
-    // physics.add.collider(sphere1, redBox, event => {
-    //   console.log(`blueBox and redBox: ${event}`)
-    // })
+    movePlayer();
+
 
 
   }
@@ -60,9 +142,16 @@ export class PhysicsTest extends Scene3D {
 const config = { scenes: [PhysicsTest], antialias: true }
 PhysicsLoader('/ammo', () => new Project(config));
 
-let sphere1;
-let plane;
+let ball;
+let player;
+let player2;
 let ballJump = false;
+let net;
+
+let playerBallCollisions = false;
+let playerShoot = false;
+let player2BallCollisions = false;
+let player2Shoot = false;
 
 function setupEventHandlers() {
 
@@ -71,7 +160,7 @@ function setupEventHandlers() {
 
 }
 
-let moveDirection = { left: 0, right: 0, forward: 0, back: 0, space: 0 }
+let moveDirection = { left: 0, right: 0, forward: 0, back: 0, space: 0, shoot: 0 }
 
 function handleKeyDown(event) {
 
@@ -97,6 +186,10 @@ function handleKeyDown(event) {
 
     case 32: //Пробел
       moveDirection.space = 1
+      break;
+
+    case 70: //F
+      moveDirection.shoot = 1
       break;
 
   }
@@ -126,6 +219,53 @@ function handleKeyUp(event) {
       moveDirection.space = 0
       break;
 
+    case 70: //F
+      moveDirection.shoot = 0
+      break;
+
   }
 
+}
+
+function movePlayer() {
+  if (moveDirection.forward == 1) {
+    player.position.x += 0.2;
+    player.body.needUpdate = true
+  }
+  else if (moveDirection.back == 1) {
+    player.position.x -= 0.2;
+    player.body.needUpdate = true
+  }
+  else {
+    player.position.x += 0;
+    player.body.needUpdate = true
+  }
+
+  if (moveDirection.left == 1) {
+    player.position.z -= 0.2;
+    player.body.needUpdate = true
+  }
+  else if (moveDirection.right == 1) {
+    player.position.z += 0.2;
+    player.body.needUpdate = true
+  }
+  else {
+    player.position.z += 0;
+    player.body.needUpdate = true
+  }
+
+  if (moveDirection.space == 1) {
+    player.position.y += 0.1;
+    player.body.needUpdate = true
+
+  }
+
+  if (moveDirection.shoot == 1) {
+    if (!playerShoot) {
+      playerShoot = true;
+      setTimeout(() => {
+        playerShoot = false;
+      }, 1000)
+    }
+  }
 }
